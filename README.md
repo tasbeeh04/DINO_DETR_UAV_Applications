@@ -8,7 +8,9 @@
 > **CSE 429: Computer Vision and Pattern Recognition - Final Project**
 
 <p align="center">
-  <img src="assets/teaser_image.png" alt="Teaser Image: YOLO vs DINO on VisDrone" width="100%">
+  <img src="Deliverables/figures/teaser.png" alt="Teaser Image: YOLO vs DINO on VisDrone" width="100%">
+
+  
   <br>
   <em>Figure 1: Comparison of CNN-based NMS (left) vs. Transformer-based Bipartite Matching (right) in hyper-dense UAV scenarios.</em>
 </p>
@@ -29,7 +31,7 @@ Standard detectors rely on dense anchor placement and Non-Maximum Suppression (N
 3. **Look Forward Twice:** A novel gradient refinement mechanism that allows deeper decoder layers to correct the bounding box coordinates of earlier layers, critical for localizing sub-15x15 pixel targets.
 
 <p align="center">
-  <img src="assets/architecture_diagram.png" alt="Architecture Flow" width="80%">
+  <img src="Deliverables/figures/mixed query.png" alt="Architecture Flow" width="80%">
   <br>
   <em>Figure 2: Our evaluation pipeline and the core components of the DINO architecture.</em>
 </p>
@@ -43,7 +45,7 @@ Models were evaluated on the VisDrone validation split using an NVIDIA T4 GPU.
 | Model | mAP@0.5 | mAP@0.5:0.95 | Inference Speed (FPS) | Complexity (GFLOPs) |
 | :--- | :---: | :---: | :---: | :---: |
 | **YOLOv11 (Baseline)** | `[ 0.00 ]` | `[ 0.00 ]` | `[ 00.0 ]` | `[ 00.0 ]` |
-| **Vanilla DETR** | `[ 0.00 ]` | `[ 0.00 ]` | `[ 00.0 ]` | `[ 00.0 ]` |
+| **Vanilla DETR** | `0.081` | `0.034` | `25` | `86` |
 | **DINO (Proposed)** | `[ 0.00 ]` | `[ 0.00 ]` | `[ 00.0 ]` | `[ 00.0 ]` |
 
 **Key Takeaways:**
