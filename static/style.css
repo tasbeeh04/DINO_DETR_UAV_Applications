@@ -1,0 +1,97 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #0f1115;
+  color: #e6e8eb;
+}
+
+header {
+  padding: 1.25rem 2rem;
+  background: #161922;
+  border-bottom: 1px solid #232734;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: #8a93a6;
+  font-size: 0.9rem;
+}
+
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+#upload-form {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+#file-input {
+  color: #e6e8eb;
+}
+
+#run-btn {
+  background: #3b82f6;
+  color: white;
+  border: 0;
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+#run-btn:hover { background: #2563eb; }
+#run-btn:disabled { background: #555; cursor: not-allowed; }
+
+#status {
+  font-size: 0.9rem;
+  color: #8a93a6;
+}
+
+#status.error { color: #f87171; }
+#status.done  { color: #34d399; }
+
+.results {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.results figure {
+  flex: 1 1 400px;
+  margin: 0;
+  background: #161922;
+  border: 1px solid #232734;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.results figcaption {
+  font-size: 0.85rem;
+  color: #8a93a6;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.results img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  background: #0f1115;
+  min-height: 200px;
+}

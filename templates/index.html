@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CV Dual-Model Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header>
+    <h1>CV Dual-Model Demo</h1>
+    <p class="subtitle">YOLOv11x &nbsp;|&nbsp; DINO</p>
+  </header>
+
+  <main>
+    <form id="upload-form">
+      <input type="file" id="file-input" name="image" accept="image/jpeg,image/png" required />
+      <button type="submit" id="run-btn">Run inference</button>
+      <span id="status">idle</span>
+    </form>
+
+    <section class="results">
+      <figure>
+        <figcaption>YOLOv11x</figcaption>
+        <img id="yolo-img" alt="YOLO result will appear here" />
+      </figure>
+      <figure>
+        <figcaption>DINO</figcaption>
+        <img id="dino-img" alt="DINO result will appear here" />
+      </figure>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
