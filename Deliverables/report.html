@@ -195,7 +195,12 @@
     <h2 class="section-title">1. Introduction</h2>
     <p>Object detection from drone-mounted cameras is a critical enabling technology for applications including military surveillance, search and rescue operations, and autonomous traffic monitoring [1]. Despite advancements in computer vision, the UAV domain presents a unique set of non-trivial challenges that break standard detection paradigms. Aerial imagery suffers from extreme scale variance, perspective shifts, and high instance density, causing traditional bounding box algorithms to merge distinct entities.</p>
     <p>Historically, models like YOLO and Faster R-CNN have dominated this space. However, the introduction of DETR (DEtection TRansformer) offered an end-to-end alternative. In this report, we explore <strong>DINO</strong>, a model that refines the DETR architecture through denoising mechanisms, to determine if its theoretical advantages translate to tangible performance gains on the challenging VisDrone dataset, comparing it directly with YOLOv11 and standard DETR variants.</p>
-
+<figure style="text-align: center; margin: 30px 0;">
+        <img src="figures/teaser.png" alt="DINO Object Detection Performance" style="max-width: 60%; height: auto; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <figcaption style="margin-top: 10px; font-style: italic; color: #555;">
+            <strong>Figure 1:</strong> DINO can Detect Even Very Small Objects
+        </figcaption>
+    </figure>
     <h2 class="section-title">2. Scholarly Review & Related Work</h2>
     <p>Our approach is grounded in the rapid evolution of object detection paradigms. The transition from pure convolutional networks to refined transformer architectures represents a sequence of breakthroughs aimed at eliminating hand-crafted priors.</p>
 
@@ -296,8 +301,22 @@
     </p>
 
     <h3>4.2 Quantitative Benchmarks</h3>
-    <p>Table 1 outlines the performance of our models on the VisDrone validation split. YOLOv11 acts as our CNN edge-baseline. Vanilla DETR represents the standard transformer architecture, and DINO represents the fully featured state-of-the-art model.</p>
-
+    <p>
+        Table 1 outlines the performance of our models on the VisDrone validation split. 
+        <strong>YOLOv11</strong> acts as our CNN edge-baseline. <strong>Vanilla DETR</strong> 
+        represents the standard transformer architecture, and <strong>DINO</strong> represents 
+        the fully featured state-of-the-art model.
+    </p>
+    <h3>Train/Validation/Test Split</h3>
+    <p>
+        The data was partitioned according to the standard challenge splits to ensure 
+        comparability with existing baselines:
+    </p>
+    <ul>
+        <li><strong>Training Set:</strong> 6,471 images</li>
+        <li><strong>Validation Set:</strong> 548 images</li>
+        <li><strong>Test-dev Set:</strong> 1,610 images (used for public evaluation and metrics)</li>
+    </ul>
     <table>
         <caption>Table 1: Comparative Benchmark Results on VisDrone Val Split</caption>
         <thead>
@@ -318,11 +337,11 @@
                 <td>[Result]</td>
             </tr>
             <tr>
-                <td style="text-align:left;">Vanilla DETR</td>
-                <td>[Result]</td>
-                <td>[Result]</td>
-                <td>[Result]</td>
-                <td>[Result]</td>
+            <td style="text-align:left;">Vanilla DETR</td>
+            <td>0.081</td>
+            <td>0.034</td>
+            <td>25</td>
+            <td>86</td>
             </tr>
             <tr>
                 <td style="text-align:left;"><strong>DINO (Proposed)</strong></td>
@@ -333,7 +352,64 @@
             </tr>
         </tbody>
     </table>
+    <section id="YOLOv11">
+    <h2 class="section-title">YOLOv11 Analysis</h2>
+    
+    <h3>Model Hyperparameters</h3>
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+    <h3>Key Observations</h3>
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+    </div>
+<section id="vanilla-detr-results">
+    <h2 class="section-title">Vanilla DETR Analysis</h2>
+    
+    <h3>Model Hyperparameters</h3>
+    <p>
+        The model was initialized with a <strong>ResNet-50</strong> backbone and fine-tuned using the following parameters defined in the training script:
+    </p>
+    <ul>
+        <li><strong>Learning Rate (lr):</strong> \(2 \times 10^{-5}\) for the Transformer.</li>
+        <li><strong>Backbone Learning Rate (lr backbone):</strong> \(5 \times 10^{-6}\), set significantly lower to preserve pre-trained spatial features.</li>
+        <li><strong>Weight Decay:</strong> \(1 \times 10^{-4}\) to prevent overfitting during fine-tuning.</li>
+        <li><strong>Total Parameters:</strong> 41.5 Million (41.3M trainable).</li>
+    </ul>
+
+    <h3>Key Observations</h3>
+    <ol>
+        <li>
+            <strong>Model Complexity:</strong> The model consists of 41.5 million total parameters, with 41.3 million being trainable. This aligns with the standard architecture for a transformer-based detector utilizing a 50-layer residual network (ResNet-50).
+        </li>
+        <li>
+            <strong>Inference Efficiency (GFLOPs):</strong> For the standard DETR model with this parameter count, the computational complexity is rated at <strong>86 GFLOPs</strong> when processing images at standard resolution.
+        </li>
+        <li>
+            <strong>Performance Bottleneck:</strong> While in evaluation mode, the precision (<strong>mAP@0.5:0.95 = 0.034</strong>) indicates the model struggles with the high density of small objects in the VisDrone dataset. Standard DETR is known to have limited feature spatial resolution, making it less effective at capturing the tiny drones and pedestrians that dominate aerial imagery.
+        </li>
+        <li>
+            <strong>Inference Speed:</strong> On an <strong>NVIDIA T4</strong> GPU, the model achieves a frame rate of approximately <strong>25 FPS</strong>. While this approach is near real-time, it is significantly slower than modern YOLO variants, which typically achieve similar or higher mAP scores with much greater throughput.
+        </li>
+    </ol>
+
+    <div class="note-box" style="background-color: #e7f3fe; border-left: 6px solid #2196F3; padding: 15px; margin-top: 20px;">
+        <p style="margin: 0;">
+            <em>Note: These performance issues are addressed in <strong>Deformable DETR</strong>, which was specifically designed to mitigate small-object detection challenges by utilizing more efficient multi-scale attention modules.</em>
+        </p>
+    </div>
+</section>
+
+
+    <section id="YOLOv11">
+    <h2 class="section-title">DINO Analysis</h2>
+    
+    <h3>Model Hyperparameters</h3>
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+    <h3>Key Observations</h3>
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+    </div>
     <h3>4.3 Ablation Study: Dissecting DINO's Efficacy</h3>
     <p>To thoroughly understand the contributions of DINO's core modules, we conduct an extensive ablation study, systematically removing individual components to observe the degradation in performance. This study is crucial for validating why DINO outperforms standard DETR, particularly in the drone domain where small object variance is high.</p>
     
