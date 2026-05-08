@@ -1,18 +1,10 @@
 
-# Benchmarking DINO for Drone-View Object Detection on VisDrone 🚁
-
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=flat&logo=pytorch&logoColor=white)](https://pytorch.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# Benchmarking DINO for Drone-View Object Detection on VisDrone
 
 > **CSE 429: Computer Vision and Pattern Recognition - Final Project**
 
 <p align="center">
-  <img src="Deliverables/figures/teaser.png" alt="Teaser Image: YOLO vs DINO on VisDrone" width="100%">
-
-  
-  <br>
-  <em>Figure 1: Comparison of CNN-based NMS (left) vs. Transformer-based Bipartite Matching (right) in hyper-dense UAV scenarios.</em>
+  <img src="./Deliverables/figures/teaser.png" alt="Teaser Image: YOLO vs DINO on VisDrone" width="100%">
 </p>
 
 ## 📖 Abstract
@@ -31,9 +23,8 @@ Standard detectors rely on dense anchor placement and Non-Maximum Suppression (N
 3. **Look Forward Twice:** A novel gradient refinement mechanism that allows deeper decoder layers to correct the bounding box coordinates of earlier layers, critical for localizing sub-15x15 pixel targets.
 
 <p align="center">
-  <img src="Deliverables/figures/mixed query.png" alt="Architecture Flow" width="80%">
-  <br>
-  <em>Figure 2: Our evaluation pipeline and the core components of the DINO architecture.</em>
+  <img src="./Deliverables/figures/mixed query.png" alt="Architecture Flow" width="80%">
+
 </p>
 
 ---
@@ -44,23 +35,45 @@ Models were evaluated on the VisDrone validation split using an NVIDIA T4 GPU.
 
 | Model | mAP@0.5 | mAP@0.5:0.95 | Inference Speed (FPS) | Complexity (GFLOPs) |
 | :--- | :---: | :---: | :---: | :---: |
-| **YOLOv11 (Baseline)** | `[ 0.00 ]` | `[ 0.00 ]` | `[ 00.0 ]` | `[ 00.0 ]` |
-| **Vanilla DETR** | `0.081` | `0.034` | `25` | `86` |
-| **DINO (Proposed)** | `[ 0.00 ]` | `[ 0.00 ]` | `[ 00.0 ]` | `[ 00.0 ]` |
+| **YOLOv11 (Baseline)** | `0.304` | `0.173` | `28.7` | `195.5` |
+| **Vanilla DETR** | `0.081` | `0.034` | `25.0` | `86.0` |
+| **DINO (Proposed)** | `0.454` | `0.265` | `11.0` | `289.3` |
 
 **Key Takeaways:**
-* **Ablation Insight:** Disabling CDN resulted in a `[XX]%` drop in early-epoch mAP, highlighting its role as a powerful surrogate for NMS in dense clusters.
+* **Ablation Insight:** Disabling CDN resulted in a drop in early-epoch mAP, highlighting its role as a powerful surrogate for NMS in dense clusters.
 * **Edge Deployment:** While DINO achieved superior bounding box precision, its quadratic cross-attention complexity heavily limits its FPS. YOLOv11 remains the pragmatic choice for SWaP-constrained (Size, Weight, and Power) real-time UAV flight.
 
 ---
 
 ## 👁️ Qualitative Analysis
 
-<p align="center">
-  <img src="assets/qualitative_grid.png" alt="Qualitative Results Grid" width="100%">
-  <br>
-  <em>Figure 3: Top row displays success cases (crowd handling, small object recovery). Bottom row displays failure cases (low-light ghosting, sub-5x5 pixel misses).</em>
-</p>
+### Dense Urban Intersection
+
+| YOLOv11x | DINO |
+|---|---|
+| ![](./Deliverables/figures/yolo_intersection.jpeg) | ![](./Deliverables/figures/dino_intersection.jpeg) |
+
+**Figure:** Dense urban intersection. Left: YOLOv11x. Right: DINO. DINO detects substantially more pedestrians in the crowded upper regions, where NMS in YOLOv11x suppresses overlapping instances.
+
+---
+
+### Sparse Parking Lot
+
+| YOLOv11x | DINO |
+|---|---|
+| ![](./Deliverables/figures/yolo_parking.jpeg) | ![](./Deliverables/figures/dino_parking.jpeg) |
+
+**Figure:** Sparse parking lot. Left: YOLOv11x. Right: DINO. Both models detect the parked vehicles with high confidence; DINO additionally identifies pedestrians near the vehicles that YOLOv11x misses, but introduces some low-confidence false positives in shadow regions.
+
+---
+
+### Oblique Urban Street with Tree Canopy Occlusion
+
+| YOLOv11x | DINO |
+|---|---|
+| ![](./Deliverables/figures/yolo_street.jpeg) | ![](./Deliverables/figures/dino_street.jpeg) |
+
+**Figure:** Oblique urban street with heavy tree canopy occlusion. Left: YOLOv11x. Right: DINO. YOLOv11x detects vehicles confidently but misses most pedestrians occluded under the trees. DINO recovers a large number of pedestrian instances across the scene, including under canopy, at the cost of label density.
 
 DINO excels in hyper-dense pedestrian plazas, successfully mapping distinct queries to heavily overlapping targets where YOLO's NMS aggressively merges them. Conversely, DINO occasionally lacks the localized inductive biases of CNNs, leading to false positives under low-light conditions by mistaking structural shadows for small vehicles.
 
@@ -70,29 +83,15 @@ DINO excels in hyper-dense pedestrian plazas, successfully mapping distinct quer
 
 ### 1. Environment Installation
 ```bash
-git clone [https://github.com/tasbeeh04/DINO_DETR_UAV_Applications.git](https://github.com/tasbeeh04/DINO_DETR_UAV_Applications.git)
+git clone https://github.com/tasbeeh04/DINO_DETR_UAV_Applications.git
 cd DINO_DETR_UAV_Applications
-pip install -r requirements.txt
-
 ```
 
-### 2. Dataset Preparation
-
-VisDrone utilizes a custom text format. We provide a script to parse these annotations into the PyTorch COCO-evaluator format required by DINO.
-
-```bash
-# Place raw VisDrone data in datasets/VisDrone/
-python scripts/visdrone_to_coco.py --input datasets/VisDrone/annotations --output datasets/VisDrone/coco_format.json
-
-```
-
-### 3. Training & Inference
+### 2. Training & Inference
 
 Due to extreme memory constraints of multi-scale transformers, we recommend executing our provided notebooks on Kaggle (minimum 16GB VRAM required).
 
-* `notebooks/YOLO_DINO_Training.ipynb`
-* `notebooks/DETR_Training.ipynb`
-
+* `notebooks/detr-with-visdrone.ipynb`
 ---
 
 ## 👥 Team
@@ -114,7 +113,3 @@ Due to extreme memory constraints of multi-scale transformers, we recommend exec
 
 * [Vision Meets Drones: A Challenge (Zhu et al.)](https://arxiv.org/abs/1804.07437)
 * [DINO: DETR with Improved DeNoising Anchor Boxes (Zhang et al.)](https://arxiv.org/abs/2203.03605)
-
-```
-
-```
