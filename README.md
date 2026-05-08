@@ -39,10 +39,6 @@ Models were evaluated on the VisDrone validation split using an NVIDIA T4 GPU.
 | **Vanilla DETR** | `0.081` | `0.034` | `25.0` | `86.0` |
 | **DINO (Proposed)** | `0.454` | `0.265` | `11.0` | `289.3` |
 
-**Key Takeaways:**
-* **Ablation Insight:** Disabling CDN resulted in a drop in early-epoch mAP, highlighting its role as a powerful surrogate for NMS in dense clusters.
-* **Edge Deployment:** While DINO achieved superior bounding box precision, its quadratic cross-attention complexity heavily limits its FPS. YOLOv11 remains the pragmatic choice for SWaP-constrained (Size, Weight, and Power) real-time UAV flight.
-
 ---
 
 ## 👁️ Qualitative Analysis

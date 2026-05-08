@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Benchmarking DINO for Drone-View Object Detection on VisDrone</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Reset & Base ─────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:        #1a1a1a;
+    --ink-soft:   #3d3d3d;
+    --ink-muted:  #6b6b6b;
+    --rule:       #c8c8c8;
+    --rule-light: #e8e8e8;
+    --accent:     #0F3460;
+    --accent-mid: #1a5496;
+    --accent-pale:#e8f0fb;
+    --paper:      #faf9f7;
+    --paper-warm: #f4f1ec;
+    --white:      #ffffff;
+    --serif:      'Source Serif 4', Georgia, serif;
+    --display:    'Playfair Display', Georgia, serif;
+    --mono:       'JetBrains Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; font-size: 17px; }
+
+  body {
+    font-family: var(--serif);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.75;
+    font-weight: 300;
+  }
+
+  /* ── Progress bar ─────────────────────────────────── */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-mid));
+    z-index: 1000; transition: width 0.1s linear;
+  }
+
+  /* ── Side TOC ─────────────────────────────────────── */
+  #toc-sidebar {
+    position: fixed; top: 50%; left: 0;
+    transform: translateY(-50%);
+    width: 220px; padding: 24px 0;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  #toc-sidebar.visible { opacity: 1; pointer-events: all; }
+  #toc-sidebar ul { list-style: none; padding: 0 20px; }
+  #toc-sidebar ul li { margin: 4px 0; }
+  #toc-sidebar ul li a {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-decoration: none;
+    display: block;
+    padding: 3px 8px;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #toc-sidebar ul li a:hover,
+  #toc-sidebar ul li a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  #toc-sidebar .toc-label {
+    font-family: var(--mono); font-size: 0.58rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--rule); padding: 0 28px 8px;
+  }
+
+  /* ── Cover Page ───────────────────────────────────── */
+  #cover {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: var(--accent);
+    padding: 60px 40px;
+    position: relative; overflow: hidden;
+    animation: fadeIn 1s ease both;
+  }
+  #cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: 
+      repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,0.04) 60px),
+      repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,0.04) 60px);
+    pointer-events: none;
+  }
+  #cover .cover-inner {
+    max-width: 760px; text-align: center; position: relative; z-index: 1;
+  }
+  #cover .cover-tag {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: rgba(255,255,255,0.5);
+    margin-bottom: 32px;
+  }
+  #cover h1 {
+    font-family: var(--display); font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 700; color: #fff; line-height: 1.18;
+    letter-spacing: -0.01em; margin-bottom: 40px;
+    animation: slideUp 0.8s 0.2s ease both;
+  }
+  #cover .cover-meta {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-bottom: 44px;
+    animation: slideUp 0.8s 0.35s ease both;
+  }
+  #cover .cover-meta span {
+    font-family: var(--serif); color: rgba(255,255,255,0.75);
+    font-size: 0.95rem; font-weight: 300;
+  }
+  #cover .cover-meta strong { color: #fff; font-weight: 600; }
+
+  /* Team table */
+  #cover table {
+    border-collapse: collapse; margin: 0 auto 40px;
+    animation: slideUp 0.8s 0.5s ease both;
+  }
+  #cover table th, #cover table td {
+    padding: 9px 28px; border: 1px solid rgba(255,255,255,0.2);
+    font-size: 0.88rem;
+  }
+  #cover table th {
+    font-family: var(--mono); letter-spacing: 0.08em; font-size: 0.72rem;
+    text-transform: uppercase; color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.06);
+  }
+  #cover table td { color: rgba(255,255,255,0.85); font-weight: 300; }
+  #cover table tr:hover td { background: rgba(255,255,255,0.06); }
+
+  #cover .cover-date {
+    font-family: var(--mono); font-size: 0.72rem;
+    letter-spacing: 0.1em; color: rgba(255,255,255,0.4);
+    animation: slideUp 0.8s 0.65s ease both;
+  }
+  #cover .scroll-hint {
+    position: absolute; bottom: 32px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.3); font-size: 0.7rem;
+    font-family: var(--mono); letter-spacing: 0.1em;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    animation: bounce 2s 1.5s infinite;
+  }
+  .scroll-hint-arrow { font-size: 1.1rem; }
+
+  /* ── Main Layout ──────────────────────────────────── */
+  #main {
+    max-width: 820px; margin: 0 auto;
+    padding: 80px 40px 120px;
+  }
+
+  /* ── TOC (inline) ─────────────────────────────────── */
+  #toc-inline {
+    margin: 0 0 72px;
+    padding: 36px 44px;
+    background: var(--white);
+    border: 1px solid var(--rule-light);
+    border-left: 4px solid var(--accent);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+    animation: fadeIn 0.6s ease both;
+  }
+  #toc-inline h2 {
+    font-family: var(--mono); font-size: 0.72rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 20px;
+    border: none; padding: 0;
+  }
+  #toc-inline ol {
+    list-style: none; counter-reset: toc-counter;
+    padding: 0; display: flex; flex-direction: column; gap: 6px;
+  }
+  #toc-inline ol li { counter-increment: toc-counter; display: flex; align-items: baseline; gap: 8px; }
+  #toc-inline ol li::before {
+    content: counter(toc-counter) ".";
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--accent); min-width: 18px;
+  }
+  #toc-inline ol li a {
+    color: var(--ink-soft); text-decoration: none; font-size: 0.9rem;
+    font-weight: 400; transition: color 0.2s;
+  }
+  #toc-inline ol li a:hover { color: var(--accent); }
+  #toc-inline ol li .toc-dots {
+    flex: 1; border-bottom: 1px dotted var(--rule);
+    margin: 0 6px; position: relative; top: -4px;
+  }
+  #toc-inline ol li .toc-page {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--ink-muted);
+  }
+
+  /* ── Abstract ─────────────────────────────────────── */
+  .abstract-block {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule-light);
+    padding: 32px 40px; margin-bottom: 72px;
+    position: relative;
+  }
+  .abstract-block::before {
+    content: 'ABSTRACT';
+    position: absolute; top: -10px; left: 24px;
+    background: var(--paper-warm);
+    padding: 0 10px;
+    font-family: var(--mono); font-size: 0.62rem;
+    letter-spacing: 0.16em; color: var(--accent);
+  }
+  .abstract-block p {
+    font-size: 0.95rem; line-height: 1.8;
+    color: var(--ink-soft); font-style: italic;
+  }
+  .keywords {
+    margin-top: 16px;
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .keywords .kw-label {
+    font-family: var(--mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .keywords .kw-tag {
+    font-family: var(--mono); font-size: 0.68rem;
+    background: var(--accent-pale); color: var(--accent);
+    padding: 3px 10px; border-radius: 2px;
+  }
+
+  /* ── Sections ─────────────────────────────────────── */
+  .section {
+    margin-bottom: 64px;
+    animation: fadeIn 0.6s ease both;
+  }
+
+  h2.section-title {
+    font-family: var(--display); font-size: 1.65rem;
+    font-weight: 700; color: var(--accent);
+    margin-bottom: 24px; padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  h2.section-title .sec-num {
+    font-family: var(--mono); font-size: 0.8rem;
+    color: var(--accent-mid); font-weight: 400;
+    min-width: 24px;
+  }
+
+  h3.subsection-title {
+    font-family: var(--display); font-size: 1.12rem;
+    font-weight: 700; color: var(--accent);
+    margin: 32px 0 14px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  h3.subsection-title .sec-num {
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--ink-muted); font-weight: 400;
+  }
+
+  h4.subsubsection-title {
+    font-family: var(--serif); font-size: 1rem;
+    font-weight: 600; color: var(--ink);
+    margin: 24px 0 10px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  h4.subsubsection-title .sec-num {
+    font-family: var(--mono); font-size: 0.68rem;
+    color: var(--ink-muted); font-weight: 400;
+  }
+
+  p { margin-bottom: 18px; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { font-weight: 600; color: var(--ink); }
+
+  /* ── Math ─────────────────────────────────────────── */
+  .math-block {
+    text-align: center; margin: 28px 0;
+    font-family: var(--mono); font-size: 0.92rem;
+    color: var(--ink-soft);
+    padding: 18px; background: var(--white);
+    border: 1px solid var(--rule-light);
+    letter-spacing: 0.02em;
+    overflow-x: auto;
+  }
+
+  /* ── Lists ────────────────────────────────────────── */
+  ul, ol { padding-left: 0; margin: 16px 0 20px; list-style: none; }
+  ul li, ol li { 
+    padding: 6px 0 6px 24px; 
+    position: relative;
+    font-size: 0.97rem;
+    border-bottom: 1px solid var(--rule-light);
+  }
+  ul li:last-child, ol li:last-child { border-bottom: none; }
+  ul li::before {
+    content: '—'; position: absolute; left: 0;
+    color: var(--accent); font-weight: 700;
+  }
+  ol { counter-reset: li-counter; }
+  ol li { counter-increment: li-counter; }
+  ol li::before {
+    content: counter(li-counter) ".";
+    position: absolute; left: 0;
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--accent); font-weight: 600; top: 9px;
+  }
+
+  /* ── Table ────────────────────────────────────────── */
+  .table-wrap {
+    margin: 32px 0; overflow-x: auto;
+  }
+  .table-caption {
+    font-family: var(--mono); font-size: 0.72rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-muted); margin-bottom: 12px;
+    text-align: center;
+  }
+  table.data-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  table.data-table thead tr {
+    background: var(--accent); color: #fff;
+  }
+  table.data-table thead th {
+    padding: 12px 18px;
+    font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    text-align: left; font-weight: 500;
+    border: none;
+  }
+  table.data-table tbody tr { border-bottom: 1px solid var(--rule-light); }
+  table.data-table tbody tr:nth-child(even) { background: var(--paper-warm); }
+  table.data-table tbody tr:hover { background: var(--accent-pale); transition: background 0.2s; }
+  table.data-table tbody td {
+    padding: 11px 18px; color: var(--ink-soft);
+  }
+  table.data-table tbody tr.highlight-row td {
+    font-weight: 600; color: var(--accent);
+    background: var(--accent-pale);
+  }
+
+  /* ── Figures ──────────────────────────────────────── */
+  .figure-pair {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin: 32px 0 8px;
+  }
+  .figure-triple {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    margin: 32px 0 8px;
+  }
+  .figure-quad {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    margin: 32px 0 8px;
+  }
+  .fig-cell { display: flex; flex-direction: column; gap: 8px; }
+  .fig-cell .fig-label {
+    font-family: var(--mono); font-size: 0.65rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-muted); text-align: center;
+  }
+  .figure-pair .fig-img, .figure-triple .fig-img,
+  .figure-quad .fig-img, .figure-single .fig-img {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule-light);
+    aspect-ratio: 4/3;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .figure-triple .fig-img, .figure-quad .fig-img {
+    aspect-ratio: 4/3;
+  }
+  .fig-img.fit-contain { background: var(--white); }
+  .fig-img.fit-contain img { object-fit: contain !important; padding: 8px; }
+  .figure-pair .fig-img img, .figure-triple .fig-img img,
+  .figure-quad .fig-img img, .figure-single .fig-img img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .figure-pair .fig-img .placeholder, .figure-single .fig-img .placeholder {
+    font-family: var(--mono); font-size: 0.65rem;
+    color: var(--rule); letter-spacing: 0.08em; text-align: center; padding: 16px;
+  }
+  .figure-single { margin: 32px 0 8px; }
+  .figure-single .fig-img { aspect-ratio: 16/7; }
+  figcaption {
+    font-size: 0.82rem; color: var(--ink-muted);
+    font-style: italic; line-height: 1.55;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--rule-light);
+    text-align: center;
+  }
+  figcaption strong { color: var(--ink-soft); font-style: normal; }
+
+  /* ── References ───────────────────────────────────── */
+  .references-list { list-style: none; padding: 0; }
+  .references-list li {
+    padding: 10px 0 10px 40px;
+    border-bottom: 1px solid var(--rule-light);
+    position: relative; font-size: 0.88rem; color: var(--ink-soft);
+  }
+  .references-list li::before {
+    content: '[' attr(data-ref) ']';
+    position: absolute; left: 0; top: 10px;
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--accent); font-weight: 600;
+  }
+  .references-list li:last-child { border-bottom: none; }
+
+  /* cite superscript */
+  sup.cite {
+    font-family: var(--mono); font-size: 0.65rem;
+    color: var(--accent); font-weight: 600;
+    cursor: default; padding: 0 1px;
+  }
+
+  /* ── Footer ───────────────────────────────────────── */
+  footer {
+    text-align: center; padding: 40px;
+    border-top: 1px solid var(--rule-light);
+    font-family: var(--mono); font-size: 0.68rem;
+    letter-spacing: 0.08em; color: var(--ink-muted);
+    background: var(--paper-warm);
+  }
+
+  /* ── Animations ───────────────────────────────────── */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes bounce {
+    0%,100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* ── Scroll reveal ────────────────────────────────── */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── Responsive ───────────────────────────────────── */
+  @media (max-width: 900px) {
+    #toc-sidebar { display: none; }
+    #main { padding: 48px 24px 80px; }
+    #cover { padding: 48px 24px; }
+    .figure-pair, .figure-triple, .figure-quad { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<!-- Side TOC -->
+<nav id="toc-sidebar">
+  <div class="toc-label">Contents</div>
+  <ul>
+    <li><a href="#abstract">Abstract</a></li>
+    <li><a href="#sec1">1. Introduction</a></li>
+    <li><a href="#sec2">2. Approach</a></li>
+    <li><a href="#sec3">3. Experiments</a></li>
+    <li><a href="#sec4">4. Qualitative Results</a></li>
+    <li><a href="#sec5">5. Conclusion</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+
+<!-- ══ COVER ══════════════════════════════════════════ -->
+<section id="cover">
+  <div class="cover-inner">
+    <div class="cover-tag">CSE 429 · Computer Vision and Pattern Recognition · Final Report</div>
+    <h1>Benchmarking DINO for Drone-View Object Detection on VisDrone</h1>
+
+    <div class="cover-meta">
+      <span><strong>Submitted to:</strong> Dr. Ahmed Gomaa</span>
+      <span><strong>Course Code:</strong> CSE 429</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Name</th><th>ID</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Jana Elsalhy</td><td>120220093</td></tr>
+        <tr><td>Shiref Ashraf</td><td>120220099</td></tr>
+        <tr><td>Ahmed Nagah</td><td>120220116</td></tr>
+        <tr><td>Tasbih Othman</td><td>120220117</td></tr>
+        <tr><td>Karim Mazroua</td><td>120220118</td></tr>
+        <tr><td>Yasmeen Sameh</td><td>120220143</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cover-date">May 9, 2026</div>
+  </div>
+  <div class="scroll-hint">
+    <span class="scroll-hint-arrow">↓</span>
+    <span>scroll</span>
+  </div>
+</section>
+
+<!-- ══ MAIN ═══════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- Table of Contents -->
+  <div id="toc-inline" class="reveal">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#abstract">Abstract</a><span class="toc-dots"></span><span class="toc-page">—</span></li>
+      <li><a href="#sec1">Introduction</a><span class="toc-dots"></span><span class="toc-page">—</span></li>
+      <li><a href="#sec2">Approach</a><span class="toc-dots"></span><span class="toc-page">—</span></li>
+      <li><a href="#sec3">Experiments and Results</a><span class="toc-dots"></span><span class="toc-page">—</span></li>
+      <li><a href="#sec4">Qualitative Results</a><span class="toc-dots"></span><span class="toc-page">—</span></li>
+      <li><a href="#sec5">Conclusion and Future Work</a><span class="toc-dots"></span><span class="toc-page">—</span></li>
+      <li><a href="#references">References</a><span class="toc-dots"></span><span class="toc-page">—</span></li>
+    </ol>
+  </div>
+
+  <!-- Abstract -->
+  <div id="abstract" class="abstract-block reveal">
+    <p>Aerial object detection from drone-mounted cameras is a critical requirement for applications such as surveillance and traffic monitoring, yet it remains challenging due to extreme scale variation, high object density, and severe background clutter. We benchmark three detection paradigms on the VisDrone-DET2019 dataset: YOLOv11x as a CNN baseline, vanilla DETR as a standard transformer baseline, and DINO (DETR with Improved DeNoising Anchor Boxes) as the proposed state-of-the-art model. DINO achieves mAP@0.5&nbsp;=&nbsp;0.454 and mAP@0.5:0.95&nbsp;=&nbsp;0.265, outperforming YOLOv11x (0.304&nbsp;/&nbsp;0.173) and Vanilla DETR (0.081&nbsp;/&nbsp;0.034) by large margins, confirming that Contrastive DeNoising and multi-scale deformable attention substantially improve recall for small, densely packed aerial targets, though at a 2.6× reduction in throughput relative to YOLOv11x.</p>
+    <div class="keywords">
+      <span class="kw-label">Keywords:</span>
+      <span class="kw-tag">Object Detection</span>
+      <span class="kw-tag">UAV</span>
+      <span class="kw-tag">VisDrone</span>
+      <span class="kw-tag">Transformers</span>
+      <span class="kw-tag">DINO</span>
+      <span class="kw-tag">YOLO</span>
+      <span class="kw-tag">DETR</span>
+    </div>
+  </div>
+
+  <!-- ── 1. Introduction ─────────────────────────────── -->
+  <div id="sec1" class="section reveal">
+    <h2 class="section-title"><span class="sec-num">1.</span> Introduction</h2>
+    <p>Object detection from drone-mounted cameras enables critical applications including search and rescue, traffic monitoring, and infrastructure inspection.<sup class="cite">[1]</sup> Compared to ground-level imagery, aerial views introduce non-trivial challenges: extreme scale variance (objects range from 5×5 to hundreds of pixels), high instance density, arbitrary camera orientations, and severe background clutter. These factors render standard detectors—which were developed and tuned on ground-level benchmarks like MS COCO—significantly less effective in the UAV domain.</p>
+    <p>Two dominant paradigms have emerged for object detection: CNN-based detectors (e.g., YOLO, Faster R-CNN) that rely on anchor boxes and Non-Maximum Suppression (NMS), and transformer-based detectors (e.g., DETR and its successors) that formulate detection as set prediction via bipartite matching, eliminating hand-crafted post-processing. DINO<sup class="cite">[6]</sup> represents the current apex of the transformer line, introducing Contrastive DeNoising training, Mixed Query Selection, and a Look Forward Twice box refinement scheme to overcome the instability and poor small-object recall of vanilla DETR.<sup class="cite">[3]</sup></p>
+    <p>In this project, we directly compare these three architectures on VisDrone to determine whether DINO's theoretical advantages translate to measurable gains in the aerial domain.</p>
+    <figure>
+      <div class="figure-single">
+        <div class="fig-img">
+          <img src="figures/teaser.png" alt="Drone-view detection challenge illustration"/>
+        </div>
+      </div>
+      <figcaption><strong>Figure 1.</strong> Illustration of the drone-view detection challenge. DINO's end-to-end global attention enables detection of densely clustered small objects that CNN-based detectors tend to suppress via NMS.</figcaption>
+    </figure>
+  </div>
+
+  <!-- ── 2. Approach ─────────────────────────────────── -->
+  <div id="sec2" class="section reveal">
+    <h2 class="section-title"><span class="sec-num">2.</span> Approach</h2>
+
+    <h3 class="subsection-title"><span class="sec-num">2.1.</span> Models</h3>
+    <p><strong>YOLOv11</strong> serves as our CNN baseline. It frames detection as a single regression problem over a dense grid of anchor boxes, followed by NMS. Its primary strengths are inference speed and low memory footprint, making it the pragmatic choice for edge deployment on UAVs with strict SWaP (Size, Weight, and Power) constraints.</p>
+    <p><strong>Vanilla DETR</strong><sup class="cite">[3]</sup> is our transformer baseline. It encodes an image with a CNN backbone, then applies a transformer encoder-decoder with learnable object queries and Hungarian-algorithm bipartite matching to produce a fixed-size set of detections without NMS. However, DETR is known to require 500+ epochs to converge and performs poorly on small objects due to limited multi-scale feature resolution.</p>
+    <p><strong>DINO</strong><sup class="cite">[6]</sup> is our proposed model, building on Deformable DETR<sup class="cite">[4]</sup> and DAB-DETR<sup class="cite">[5]</sup> with three core improvements:</p>
+    <ul>
+      <li><strong>Contrastive DeNoising (CDN):</strong> Augments standard bipartite matching with noised positive and negative query groups derived from ground-truth boxes. Positive samples (small jitter around ground truth) force early spatial locking; negative samples (anchors far from ground truth) act as a learned surrogate for NMS, suppressing duplicate detections in dense crowds.</li>
+      <li><strong>Mixed Query Selection:</strong> Initializes the decoder's positional queries from the top-K encoder features, while keeping content queries as learnable parameters. This dynamic initialization ensures the decoder immediately attends to the most salient image regions, boosting recall for small targets.</li>
+      <li><strong>Look Forward Twice:</strong> Allows the refined bounding box from decoder layer <em>i</em>+1 to supervise the prediction of layer <em>i</em>, improving gradient flow and enabling tight localization of sub-15×15-pixel objects.</li>
+    </ul>
+
+    <figure>
+      <div class="figure-quad">
+        <div class="fig-cell">
+          <div class="fig-img fit-contain"><img src="figures/fr-cnn.png" alt="Faster R-CNN architecture diagram"/></div>
+          <div class="fig-label">Faster R-CNN (CNN, two-stage)</div>
+        </div>
+        <div class="fig-cell">
+          <div class="fig-img fit-contain"><img src="figures/detr.png" alt="DETR architecture diagram"/></div>
+          <div class="fig-label">DETR (transformer baseline)</div>
+        </div>
+        <div class="fig-cell">
+          <div class="fig-img fit-contain"><img src="figures/deformable%20detr.png" alt="Deformable DETR architecture diagram"/></div>
+          <div class="fig-label">Deformable DETR (multi-scale)</div>
+        </div>
+        <div class="fig-cell">
+          <div class="fig-img fit-contain"><img src="figures/DAB_DETR.png" alt="DAB-DETR architecture diagram"/></div>
+          <div class="fig-label">DAB-DETR (dynamic anchor boxes)</div>
+        </div>
+      </div>
+      <figcaption><strong>Figure 2.</strong> Architectural lineage of detection paradigms compared in this study. Faster R-CNN exemplifies the classical two-stage CNN approach with explicit region proposals and NMS, while the DETR family progressively addresses small-object recall and slow convergence through multi-scale deformable attention (Deformable DETR) and explicit anchor-box queries (DAB-DETR). DINO inherits these advances and adds the three components shown in Figure 3.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="figure-triple">
+        <div class="fig-cell">
+          <div class="fig-img fit-contain"><img src="figures/CDN.png" alt="Contrastive DeNoising training schematic"/></div>
+          <div class="fig-label">Contrastive DeNoising</div>
+        </div>
+        <div class="fig-cell">
+          <div class="fig-img fit-contain"><img src="figures/mixed%20query.png" alt="Mixed Query Selection schematic"/></div>
+          <div class="fig-label">Mixed Query Selection</div>
+        </div>
+        <div class="fig-cell">
+          <div class="fig-img fit-contain"><img src="figures/look%20forward%20twice.png" alt="Look Forward Twice box-refinement schematic"/></div>
+          <div class="fig-label">Look Forward Twice</div>
+        </div>
+      </div>
+      <figcaption><strong>Figure 3.</strong> The three core improvements of DINO over its predecessors. <em>Left:</em> Contrastive DeNoising adds positive and negative noised query groups so the model learns an explicit "no-object" signal, replacing NMS. <em>Center:</em> Mixed Query Selection initializes positional queries from top-K encoder features, anchoring the decoder to the most salient image regions. <em>Right:</em> Look Forward Twice lets layer <em>i</em>+1's refined box supervise layer <em>i</em>, improving gradient flow for small-target localization.</figcaption>
+    </figure>
+
+    <h3 class="subsection-title"><span class="sec-num">2.2.</span> Dataset and Pipeline</h3>
+    <p>We use the VisDrone-DET2019 dataset<sup class="cite">[1]</sup>, partitioned according to the standard challenge splits: 6,471 training images, 548 validation images, and 1,610 test-dev images. Because DINO uses the PyTorch COCO evaluator natively, we engineered a custom conversion pipeline that parses VisDrone's text-format annotations and serializes them into <code>instances.json</code> files following the COCO schema, enabling a unified mAP computation across all three models.</p>
+    <p>All models were initialized with COCO-pretrained weights to leverage strong foundational features and accelerate convergence on the specialized aerial domain. Training was conducted on Kaggle using an NVIDIA T4 GPU (16 GB VRAM). Due to the extreme computational cost of multi-scale transformer training, DINO and DETR were fine-tuned for 20–30 epochs rather than trained from scratch; YOLOv11 was fine-tuned to convergence. These compute constraints are an acknowledged limitation and are factored into our result interpretation.</p>
+  </div>
+
+  <!-- ── 3. Experiments ──────────────────────────────── -->
+  <div id="sec3" class="section reveal">
+    <h2 class="section-title"><span class="sec-num">3.</span> Experiments and Results</h2>
+
+    <h3 class="subsection-title"><span class="sec-num">3.1.</span> Evaluation Metrics</h3>
+    <p>We evaluate all models on Mean Average Precision (mAP), Frames Per Second (FPS), and GFLOPs:</p>
+    <div class="math-block">
+      Precision = TP / (TP + FP) &nbsp;&nbsp;&nbsp;&nbsp; Recall = TP / (TP + FN)
+      <br/><br/>
+      mAP = (1/N) · Σ ∫₀¹ pᵢ(r) dr
+    </div>
+    <p>mAP@0.5 uses a single IoU threshold; mAP@0.5:0.95 averages over IoU thresholds from 0.5 to 0.95 in steps of 0.05, providing a stricter measure of localization quality. FPS is measured on the NVIDIA T4 GPU used for training. GFLOPs measure computational complexity at inference.</p>
+
+    <h3 class="subsection-title"><span class="sec-num">3.2.</span> Quantitative Results</h3>
+    <div class="table-wrap">
+      <div class="table-caption">Table 1 — Comparative Benchmark Results on VisDrone Val Split</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Model</th><th>mAP@0.5</th><th>mAP@0.5:0.95</th><th>FPS (T4)</th><th>GFLOPs</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>YOLOv11x</td><td>0.304</td><td>0.173</td><td>28.7</td><td>195.5</td></tr>
+          <tr><td>Vanilla DETR</td><td>0.081</td><td>0.034</td><td>25.0</td><td>86.0</td></tr>
+          <tr class="highlight-row"><td>DINO</td><td>0.454</td><td>0.265</td><td>11.0</td><td>289.3</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 class="subsubsection-title"><span class="sec-num">3.2.1.</span> YOLOv11x</h4>
+    <p>YOLOv11x was fine-tuned on VisDrone and achieved mAP@0.5 = 0.304 and mAP@0.5:0.95 = 0.173, running at 28.7 FPS with a computational cost of 195.5 GFLOPs. The relatively high throughput reflects YOLO's CNN inductive biases, which are heavily optimized on modern GPU pipelines. However, the modest mAP highlights YOLO's known limitation in dense aerial scenes: NMS aggressively suppresses valid overlapping detections, causing missed instances whenever two objects of the same class share significant bounding box overlap from an aerial perspective—a frequent occurrence in VisDrone's crowded street scenes.</p>
+
+    <h4 class="subsubsection-title"><span class="sec-num">3.2.2.</span> Vanilla DETR</h4>
+    <p>DETR was fine-tuned with a ResNet-50 backbone (41.5M parameters, 41.3M trainable) using a transformer learning rate of 2×10⁻⁵, backbone learning rate of 5×10⁻⁶, and weight decay of 1×10⁻⁴.</p>
+    <p>The model achieved mAP@0.5 = 0.081 and mAP@0.5:0.95 = 0.034, with an inference speed of approximately 25 FPS at 86 GFLOPs. The low mAP is consistent with known limitations: DETR's single-scale attention provides limited spatial resolution for the small, dense targets that dominate VisDrone. The uniform quadratic attention over all pixels prevents the model from focusing on sub-15×15-pixel objects effectively. These exact limitations are what motivated the Deformable DETR and, subsequently, DINO architectures.</p>
+
+    <h4 class="subsubsection-title"><span class="sec-num">3.2.3.</span> DINO</h4>
+    <p>DINO achieved mAP@0.5 = 0.454 and mAP@0.5:0.95 = 0.265, representing a <strong>+49%</strong> relative improvement in mAP@0.5 and a <strong>+53%</strong> improvement in mAP@0.5:0.95 over YOLOv11x. These gains come at a cost: DINO runs at only 11.0 FPS with 289.3 GFLOPs—roughly 2.6× slower and 1.5× more compute-intensive than YOLOv11x. The accuracy gains are attributable to DINO's NMS-free bipartite matching preserving densely overlapping instances, and its multi-scale deformable attention maintaining spatial resolution for small targets. The strict localization metric (mAP@0.5:0.95) improving by a larger relative margin than mAP@0.5 confirms that Look Forward Twice provides tighter bounding box regression, not merely better recall.</p>
+  </div>
+
+  <!-- ── 4. Qualitative Results ──────────────────────── -->
+  <div id="sec4" class="section reveal">
+    <h2 class="section-title"><span class="sec-num">4.</span> Qualitative Results</h2>
+    <p>We present three representative scene types from the VisDrone validation set: a dense urban intersection, a sparse parking lot, and an oblique street with heavy tree-canopy occlusion. Each scene is evaluated with YOLOv11x and DINO side-by-side.</p>
+
+    <figure>
+      <div class="figure-pair">
+        <div class="fig-img"><img src="figures/yolo_intersection.jpeg" alt="YOLOv11x detection on a dense urban intersection"/></div>
+        <div class="fig-img"><img src="figures/dino_intersection.jpeg" alt="DINO detection on a dense urban intersection"/></div>
+      </div>
+      <figcaption><strong>Figure 4.</strong> Dense urban intersection. Left: YOLOv11x. Right: DINO. DINO detects substantially more pedestrians in the crowded upper regions, where NMS in YOLOv11x suppresses overlapping instances.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="figure-pair">
+        <div class="fig-img"><img src="figures/yolo_parking.jpeg" alt="YOLOv11x detection on a sparse parking lot"/></div>
+        <div class="fig-img"><img src="figures/dino_parking.jpeg" alt="DINO detection on a sparse parking lot"/></div>
+      </div>
+      <figcaption><strong>Figure 5.</strong> Sparse parking lot. Left: YOLOv11x. Right: DINO. Both models detect the parked vehicles with high confidence; DINO additionally identifies pedestrians near the vehicles that YOLOv11x misses, but introduces some low-confidence false positives in shadow regions.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="figure-pair">
+        <div class="fig-img"><img src="figures/yolo_street.jpeg" alt="YOLOv11x detection on an oblique urban street with tree canopy occlusion"/></div>
+        <div class="fig-img"><img src="figures/dino_street.jpeg" alt="DINO detection on an oblique urban street with tree canopy occlusion"/></div>
+      </div>
+      <figcaption><strong>Figure 6.</strong> Oblique urban street with heavy tree canopy occlusion. Left: YOLOv11x. Right: DINO. YOLOv11x detects vehicles confidently but misses most pedestrians occluded under the trees. DINO recovers a large number of pedestrian instances across the scene, including under canopy, at the cost of label density.</figcaption>
+    </figure>
+
+    <p><strong>Dense intersection (Figure 4).</strong> In the crowded intersection scene, YOLOv11x detects vehicles with reasonable confidence but misses a large fraction of pedestrians clustered in the upper-right and upper-left sidewalk regions. DINO, by contrast, produces a substantially denser set of pedestrian detections in those regions, correctly labeling individuals that are tightly packed and partially overlapping from the aerial viewpoint. This directly reflects the NMS suppression problem: YOLOv11x's post-processing collapses overlapping pedestrian boxes, while DINO's one-to-one matching assigns a unique query to each instance. The trade-off is label clutter—DINO's output is visually noisier due to the high number of low-to-mid confidence detections (0.35–0.50), some of which may be false positives.</p>
+    <p><strong>Sparse parking lot (Figure 5).</strong> In the less cluttered parking scene, both models perform well on stationary vehicles, with YOLOv11x achieving high-confidence car detections (0.80–0.87) and clean bounding box fits. DINO matches this vehicle detection quality (0.85–0.96) and additionally identifies pedestrians near the parked cars that YOLOv11x entirely misses—consistent with DINO's stronger recall for small objects. However, DINO also produces several spurious low-confidence "people" detections near shadows and car hoods, illustrating the weaker spatial inductive biases of transformer attention relative to CNN hierarchical pooling.</p>
+    <p><strong>Oblique street with occlusion (Figure 6).</strong> This scene presents a challenging oblique viewing angle with significant tree canopy covering both the road center and sidewalks. YOLOv11x detects vehicles with high confidence (cars, vans, tricycles, motors at 0.38–0.85) but recovers only a sparse set of pedestrians—mostly those in open, unoccluded areas—entirely missing the clusters of people walking under the tree cover. DINO dramatically increases pedestrian recall across the full scene: it detects people in the upper road region, beneath the canopy, on the right-side sidewalk, and in the lower foreground, many of which are invisible to YOLOv11x. Notably, DINO also identifies a truck in the lower-right cluster that YOLOv11x does not label. The trade-off is a dense, overlapping label layout with scores in the 0.35–0.54 range, reflecting genuine uncertainty under heavy occlusion rather than false detection.</p>
+    <p><strong>Summary.</strong> Across all three scenes, DINO consistently achieves higher recall for pedestrians and small instances, particularly under occlusion and in dense crowds, at the cost of lower per-detection confidence and a noisier output layout. YOLOv11x is faster, cleaner, and more precise on vehicles in open areas, but systematically under-detects in occluded or crowded regions. This qualitative pattern is fully consistent with the quantitative gap in Table 1.</p>
+  </div>
+
+  <!-- ── 5. Conclusion ───────────────────────────────── -->
+  <div id="sec5" class="section reveal">
+    <h2 class="section-title"><span class="sec-num">5.</span> Conclusion and Future Work</h2>
+    <p>We benchmarked three detection paradigms—YOLOv11x, Vanilla DETR, and DINO—on the VisDrone aerial dataset. Vanilla DETR's poor small-object recall (mAP@0.5:0.95 = 0.034) confirms that standard transformer attention is insufficient for dense aerial scenes. DINO achieves mAP@0.5 = 0.454 and mAP@0.5:0.95 = 0.265, outperforming YOLOv11x (0.304 / 0.173) by a substantial margin, validating that Contrastive DeNoising, Mixed Query Selection, and Look Forward Twice collectively address the core failure modes of both vanilla DETR and CNN-based detectors in the UAV domain. YOLOv11x remains the pragmatic choice at 28.7 FPS for edge deployment, while DINO at 11.0 FPS is better suited for high-accuracy offline analysis.</p>
+    <p>Future directions include: (1) <strong>Slicing Aided Hyper Inference (SAHI)</strong>, which tiles high-resolution aerial images into overlapping patches to artificially increase the apparent size of small targets during both training and inference; (2) <strong>Knowledge Distillation</strong> from DINO into a lightweight CNN to combine global reasoning with edge-friendly throughput; and (3) full fine-tuning of DINO beyond 30 epochs on VisDrone using distributed compute to realize the model's full accuracy potential.</p>
+  </div>
+
+  <!-- ── References ──────────────────────────────────── -->
+  <div id="references" class="section reveal">
+    <h2 class="section-title"><span class="sec-num"></span> References</h2>
+    <ol class="references-list">
+      <li data-ref="1">P. Zhu et al., "Vision Meets Drones: A Challenge," <em>arXiv:1804.07437</em>, 2018.</li>
+      <li data-ref="2">J. Redmon, S. Divvala, R. Girshick, and A. Farhadi, "You Only Look Once: Unified, Real-Time Object Detection," in <em>CVPR</em>, 2016, pp. 779–788.</li>
+      <li data-ref="3">N. Carion et al., "End-to-End Object Detection with Transformers," in <em>ECCV</em>, 2020, pp. 213–229.</li>
+      <li data-ref="4">X. Zhu et al., "Deformable DETR: Deformable Transformers for End-to-End Object Detection," in <em>ICLR</em>, 2021.</li>
+      <li data-ref="5">S. Liu et al., "DAB-DETR: Dynamic Anchor Boxes are Better Queries for DETR," in <em>ICLR</em>, 2022.</li>
+      <li data-ref="6">H. Zhang et al., "DINO: DETR with Improved DeNoising Anchor Boxes for End-to-End Object Detection," in <em>ICLR</em>, 2023.</li>
+    </ol>
+  </div>
+
+</main>
+
+<footer>
+  CSE 429 · Computer Vision and Pattern Recognition &nbsp;·&nbsp; Egypt-Japan University of Science and Technology &nbsp;·&nbsp; May 2026
+</footer>
+
+<script>
+  // Progress bar
+  const bar = document.getElementById('progress-bar');
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const pct = (doc.scrollTop / (doc.scrollHeight - doc.clientHeight)) * 100;
+    bar.style.width = pct + '%';
+  });
+
+  // Side TOC visibility (show after scrolling past cover)
+  const cover = document.getElementById('cover');
+  const sidebar = document.getElementById('toc-sidebar');
+  const io = new IntersectionObserver(([e]) => {
+    sidebar.classList.toggle('visible', !e.isIntersecting);
+  }, { threshold: 0.1 });
+  io.observe(cover);
+
+  // Active TOC link
+  const sections = document.querySelectorAll('[id]');
+  const tocLinks = document.querySelectorAll('#toc-sidebar a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 120) current = s.id;
+    });
+    tocLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const revealIO = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.08 });
+  reveals.forEach(el => revealIO.observe(el));
+</script>
+</body>
+</html>
