@@ -88,6 +88,8 @@ cd DINO_DETR_UAV_Applications
 Due to extreme memory constraints of multi-scale transformers, we recommend executing our provided notebooks on Kaggle (minimum 16GB VRAM required).
 
 * `notebooks/detr-with-visdrone.ipynb`
+* `notebooks/DINO vs YOLO11x on COCO.ipynb`
+* `notebooks/DINO vs YOLO11x on VisDrone.ipynb`
 ---
 
 ## 👥 Team
