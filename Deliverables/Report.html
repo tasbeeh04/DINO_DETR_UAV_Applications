@@ -685,7 +685,7 @@
 
   <!-- ── 5. Conclusion ───────────────────────────────── -->
   <div id="sec5" class="section reveal">
-    <h2 class="section-title"><span class="sec-num">5.</span> Conclusion and Future Work</h2>
+    <h2 class="section-title"><span class="sec-num">5.</span> Conclusion</h2>
     <p>We benchmarked three detection paradigms—YOLOv11x, Vanilla DETR, and DINO—on the VisDrone aerial dataset. Vanilla DETR's poor small-object recall (mAP@0.5:0.95 = 0.034) confirms that standard transformer attention is insufficient for dense aerial scenes. DINO achieves mAP@0.5 = 0.454 and mAP@0.5:0.95 = 0.265, outperforming YOLOv11x (0.304 / 0.173) by a substantial margin, validating that Contrastive DeNoising, Mixed Query Selection, and Look Forward Twice collectively address the core failure modes of both vanilla DETR and CNN-based detectors in the UAV domain. YOLOv11x remains the pragmatic choice at 28.7 FPS for edge deployment, while DINO at 11.0 FPS is better suited for high-accuracy offline analysis.</p>
     <!-- <p>Future directions include: (1) <strong>Slicing Aided Hyper Inference (SAHI)</strong>, which tiles high-resolution aerial images into overlapping patches to artificially increase the apparent size of small targets during both training and inference; (2) <strong>Knowledge Distillation</strong> from DINO into a lightweight CNN to combine global reasoning with edge-friendly throughput; and (3) full fine-tuning of DINO beyond 30 epochs on VisDrone using distributed compute to realize the model's full accuracy potential.</p> -->
   </div>
