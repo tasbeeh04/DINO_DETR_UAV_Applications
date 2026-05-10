@@ -581,7 +581,16 @@
           <div class="fig-label">DAB-DETR (dynamic anchor boxes)</div>
         </div>
       </div>
-      <figcaption><strong>Figure 2.</strong> Architectural lineage of detection paradigms compared in this study. Faster R-CNN exemplifies the classical two-stage CNN approach with explicit region proposals and NMS, while the DETR family progressively addresses small-object recall and slow convergence through multi-scale deformable attention (Deformable DETR) and explicit anchor-box queries (DAB-DETR). DINO inherits these advances and adds the three components shown in Figure 3.</figcaption>
+      <figcaption><strong>Figure 2.</strong> Architectural lineage of detection paradigms compared in this study. Faster R-CNN exemplifies the classical two-stage CNN approach with explicit region proposals and NMS, while the DETR family progressively addresses small-object recall and slow convergence through multi-scale deformable attention (Deformable DETR) and explicit anchor-box queries (DAB-DETR). DINO inherits these advances and adds the three components shown in Figure 4.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="figure-single">
+        <div class="fig-img fit-contain">
+          <img src="figures/dn_dab_dino_comparison.png" alt="Comparison between DN-DETR, DAB-DETR, and DINO"/>
+        </div>
+      </div>
+      <figcaption><strong>Figure 3.</strong> Comparison between DN-DETR, DAB-DETR, and DINO architectures. This visualizes the evolution from dynamic anchor boxes in DAB-DETR and query denoising in DN-DETR towards DINO's unified state-of-the-art framework.</figcaption>
     </figure>
 
     <figure>
@@ -599,7 +608,7 @@
           <div class="fig-label">Look Forward Twice</div>
         </div>
       </div>
-      <figcaption><strong>Figure 3.</strong> The three core improvements of DINO over its predecessors. <em>Left:</em> Contrastive DeNoising adds positive and negative noised query groups so the model learns an explicit "no-object" signal, replacing NMS. <em>Center:</em> Mixed Query Selection initializes positional queries from top-K encoder features, anchoring the decoder to the most salient image regions. <em>Right:</em> Look Forward Twice lets layer <em>i</em>+1's refined box supervise layer <em>i</em>, improving gradient flow for small-target localization.</figcaption>
+      <figcaption><strong>Figure 4.</strong> The three core improvements of DINO over its predecessors. <em>Left:</em> Contrastive DeNoising adds positive and negative noised query groups so the model learns an explicit "no-object" signal, replacing NMS. <em>Center:</em> Mixed Query Selection initializes positional queries from top-K encoder features, anchoring the decoder to the most salient image regions. <em>Right:</em> Look Forward Twice lets layer <em>i</em>+1's refined box supervise layer <em>i</em>, improving gradient flow for small-target localization.</figcaption>
     </figure>
 
     <h3 class="subsection-title"><span class="sec-num">2.2.</span> Dataset and Pipeline</h3>
@@ -658,7 +667,7 @@
         <div class="fig-img"><img src="figures/yolo_intersection.jpeg" alt="YOLOv11x detection on a dense urban intersection"/></div>
         <div class="fig-img"><img src="figures/dino_intersection.jpeg" alt="DINO detection on a dense urban intersection"/></div>
       </div>
-      <figcaption><strong>Figure 4.</strong> Dense urban intersection. Left: YOLOv11x. Right: DINO. DINO detects substantially more pedestrians in the crowded upper regions, where NMS in YOLOv11x suppresses overlapping instances.</figcaption>
+      <figcaption><strong>Figure 5.</strong> Dense urban intersection. Left: YOLOv11x. Right: DINO. DINO detects substantially more pedestrians in the crowded upper regions, where NMS in YOLOv11x suppresses overlapping instances.</figcaption>
     </figure>
 
     <figure>
@@ -666,7 +675,7 @@
         <div class="fig-img"><img src="figures/yolo_parking.jpeg" alt="YOLOv11x detection on a sparse parking lot"/></div>
         <div class="fig-img"><img src="figures/dino_parking.jpeg" alt="DINO detection on a sparse parking lot"/></div>
       </div>
-      <figcaption><strong>Figure 5.</strong> Sparse parking lot. Left: YOLOv11x. Right: DINO. Both models detect the parked vehicles with high confidence; DINO additionally identifies pedestrians near the vehicles that YOLOv11x misses, but introduces some low-confidence false positives in shadow regions.</figcaption>
+      <figcaption><strong>Figure 6.</strong> Sparse parking lot. Left: YOLOv11x. Right: DINO. Both models detect the parked vehicles with high confidence; DINO additionally identifies pedestrians near the vehicles that YOLOv11x misses, but introduces some low-confidence false positives in shadow regions.</figcaption>
     </figure>
 
     <figure>
@@ -674,12 +683,12 @@
         <div class="fig-img"><img src="figures/yolo_street.jpeg" alt="YOLOv11x detection on an oblique urban street with tree canopy occlusion"/></div>
         <div class="fig-img"><img src="figures/dino_street.jpeg" alt="DINO detection on an oblique urban street with tree canopy occlusion"/></div>
       </div>
-      <figcaption><strong>Figure 6.</strong> Oblique urban street with heavy tree canopy occlusion. Left: YOLOv11x. Right: DINO. YOLOv11x detects vehicles confidently but misses most pedestrians occluded under the trees. DINO recovers a large number of pedestrian instances across the scene, including under canopy, at the cost of label density.</figcaption>
+      <figcaption><strong>Figure 7.</strong> Oblique urban street with heavy tree canopy occlusion. Left: YOLOv11x. Right: DINO. YOLOv11x detects vehicles confidently but misses most pedestrians occluded under the trees. DINO recovers a large number of pedestrian instances across the scene, including under canopy, at the cost of label density.</figcaption>
     </figure>
 
-    <p><strong>Dense intersection (Figure 4).</strong> In the crowded intersection scene, YOLOv11x detects vehicles with reasonable confidence but misses a large fraction of pedestrians clustered in the upper-right and upper-left sidewalk regions. DINO, by contrast, produces a substantially denser set of pedestrian detections in those regions, correctly labeling individuals that are tightly packed and partially overlapping from the aerial viewpoint. This directly reflects the NMS suppression problem: YOLOv11x's post-processing collapses overlapping pedestrian boxes, while DINO's one-to-one matching assigns a unique query to each instance. The trade-off is label clutter—DINO's output is visually noisier due to the high number of low-to-mid confidence detections (0.35–0.50), some of which may be false positives.</p>
-    <p><strong>Sparse parking lot (Figure 5).</strong> In the less cluttered parking scene, both models perform well on stationary vehicles, with YOLOv11x achieving high-confidence car detections (0.80–0.87) and clean bounding box fits. DINO matches this vehicle detection quality (0.85–0.96) and additionally identifies pedestrians near the parked cars that YOLOv11x entirely misses—consistent with DINO's stronger recall for small objects. However, DINO also produces several spurious low-confidence "people" detections near shadows and car hoods, illustrating the weaker spatial inductive biases of transformer attention relative to CNN hierarchical pooling.</p>
-    <p><strong>Oblique street with occlusion (Figure 6).</strong> This scene presents a challenging oblique viewing angle with significant tree canopy covering both the road center and sidewalks. YOLOv11x detects vehicles with high confidence (cars, vans, tricycles, motors at 0.38–0.85) but recovers only a sparse set of pedestrians—mostly those in open, unoccluded areas—entirely missing the clusters of people walking under the tree cover. DINO dramatically increases pedestrian recall across the full scene: it detects people in the upper road region, beneath the canopy, on the right-side sidewalk, and in the lower foreground, many of which are invisible to YOLOv11x. Notably, DINO also identifies a truck in the lower-right cluster that YOLOv11x does not label. The trade-off is a dense, overlapping label layout with scores in the 0.35–0.54 range, reflecting genuine uncertainty under heavy occlusion rather than false detection.</p>
+    <p><strong>Dense intersection (Figure 5).</strong> In the crowded intersection scene, YOLOv11x detects vehicles with reasonable confidence but misses a large fraction of pedestrians clustered in the upper-right and upper-left sidewalk regions. DINO, by contrast, produces a substantially denser set of pedestrian detections in those regions, correctly labeling individuals that are tightly packed and partially overlapping from the aerial viewpoint. This directly reflects the NMS suppression problem: YOLOv11x's post-processing collapses overlapping pedestrian boxes, while DINO's one-to-one matching assigns a unique query to each instance. The trade-off is label clutter—DINO's output is visually noisier due to the high number of low-to-mid confidence detections (0.35–0.50), some of which may be false positives.</p>
+    <p><strong>Sparse parking lot (Figure 6).</strong> In the less cluttered parking scene, both models perform well on stationary vehicles, with YOLOv11x achieving high-confidence car detections (0.80–0.87) and clean bounding box fits. DINO matches this vehicle detection quality (0.85–0.96) and additionally identifies pedestrians near the parked cars that YOLOv11x entirely misses—consistent with DINO's stronger recall for small objects. However, DINO also produces several spurious low-confidence "people" detections near shadows and car hoods, illustrating the weaker spatial inductive biases of transformer attention relative to CNN hierarchical pooling.</p>
+    <p><strong>Oblique street with occlusion (Figure 7).</strong> This scene presents a challenging oblique viewing angle with significant tree canopy covering both the road center and sidewalks. YOLOv11x detects vehicles with high confidence (cars, vans, tricycles, motors at 0.38–0.85) but recovers only a sparse set of pedestrians—mostly those in open, unoccluded areas—entirely missing the clusters of people walking under the tree cover. DINO dramatically increases pedestrian recall across the full scene: it detects people in the upper road region, beneath the canopy, on the right-side sidewalk, and in the lower foreground, many of which are invisible to YOLOv11x. Notably, DINO also identifies a truck in the lower-right cluster that YOLOv11x does not label. The trade-off is a dense, overlapping label layout with scores in the 0.35–0.54 range, reflecting genuine uncertainty under heavy occlusion rather than false detection.</p>
     <p><strong>Summary.</strong> Across all three scenes, DINO consistently achieves higher recall for pedestrians and small instances, particularly under occlusion and in dense crowds, at the cost of lower per-detection confidence and a noisier output layout. YOLOv11x is faster, cleaner, and more precise on vehicles in open areas, but systematically under-detects in occluded or crowded regions. This qualitative pattern is fully consistent with the quantitative gap in Table 1.</p>
   </div>
 
